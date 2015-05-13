@@ -1,5 +1,6 @@
 var util = require('../util/index');
 var vec2d = require('./vector2d');
+var datalib = require('datalib');
 
 module.exports = function(codegen) {
 
@@ -7,7 +8,7 @@ module.exports = function(codegen) {
     var obj = codegen(args[0]);
     if (cast) {
       obj = cast + "(" + obj + ")";
-      if (util.startsWith(cast, "new ")) obj = "(" + obj + ")";
+      if (dl.startsWith(cast, "new ")) obj = "(" + obj + ")";
     }
     return obj + "." + name + (type < 0 ? "" : type === 0
       ? "()"

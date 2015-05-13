@@ -1,11 +1,17 @@
-var Heap = require('heap'),
+var dl = require('datalib'),
+    Heap = require('heap'),
     Datasource = require('./Datasource'),
     Signal = require('./Signal'),
     changeset = require('./changeset'),
-    util = require('../util/index'),
+    debug = require('../util/debug'),
     C = require('../util/constants');
 
 function Graph() {
+}
+
+var proto = Graph.prototype;
+
+proto.init = function() {
   this._stamp = 0;
   this._rank  = 0;
 
@@ -13,19 +19,18 @@ function Graph() {
   this._signals = {};
 
   this.doNotPropagate = {};
-}
-
-var proto = Graph.prototype;
+};
 
 proto.data = function(name, pipeline, facet) {
-  if(arguments.length === 1) return this._data[name];
-  return (this._data[name] = new Datasource(this, name, facet)
-    .pipeline(pipeline));
+  var db = this._data;
+  if(!arguments.length) return dl.keys(db).map(function(d) { return db[d]; });
+  if(arguments.length === 1) return db[name];
+  return (db[name] = new Datasource(this, name, facet).pipeline(pipeline));
 };
 
 function signal(name) {
   var m = this, i, len;
-  if(!util.isArray(name)) return this._signals[name];
+  if(!dl.isArray(name)) return this._signals[name];
   return name.map(function(n) { m._signals[n]; });
 }
 
@@ -37,17 +42,18 @@ proto.signal = function(name, init) {
 
 proto.signalValues = function(name) {
   var graph = this;
-  if(!util.isArray(name)) return this._signals[name].value();
+  if(!arguments.length) name = dl.keys(this._signals);
+  if(!dl.isArray(name)) return this._signals[name].value();
   return name.reduce(function(sg, n) {
     return (sg[n] = graph._signals[n].value(), sg);
   }, {});
 };
 
 proto.signalRef = function(ref) {
-  if(!util.isArray(ref)) ref = util.field(ref);
+  if(!dl.isArray(ref)) ref = dl.field(ref);
   var value = this.signal(ref.shift()).value();
   if(ref.length > 0) {
-    var fn = Function("s", "return s["+ref.map(util.str).join("][")+"]");
+    var fn = Function("s", "return s["+ref.map(dl.str).join("][")+"]");
     value = fn.call(null, value);
   }
 
@@ -84,7 +90,7 @@ proto.propagate = function(pulse, node) {
     // a group's dataflow branch). Re-queue if it has. T
     // TODO: use pq.replace or pq.poppush?
     if(r != n.rank()) {
-      util.debug(p, ['Rank mismatch', r, n.rank()]);
+      debug(p, ['Rank mismatch', r, n.rank()]);
       pq.push({ node: n, pulse: p, rank: n.rank() });
       continue;
     }
@@ -113,7 +119,7 @@ function forEachNode(branch, fn) {
 }
 
 proto.connect = function(branch) {
-  util.debug({}, ['connecting']);
+  debug({}, ['connecting']);
   var graph = this;
   forEachNode(branch, function(n, c, i) {
     var data = n.dependency(C.DATA),
@@ -140,7 +146,7 @@ proto.connect = function(branch) {
 };
 
 proto.disconnect = function(branch) {
-  util.debug({}, ['disconnecting']);
+  debug({}, ['disconnecting']);
   var graph = this;
 
   forEachNode(branch, function(n, c, i) {

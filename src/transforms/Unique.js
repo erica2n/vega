@@ -1,7 +1,7 @@
 var Transform = require('./Transform'),
     GroupBy = require('./GroupBy'),
     tuple = require('../dataflow/tuple'),
-    util = require('../util/index');
+    debug = require('../util/debug');
 
 function Unique(graph) {
   GroupBy.prototype.init.call(this, graph);
@@ -25,8 +25,8 @@ proto._new_tuple = function(x) {
 };
 
 proto.transform = function(input, reset) {
-  util.debug(input, ["uniques"]);
-  this._refs = [this.field.get(this._graph).accessor];
+  debug(input, ["uniques"]);
+  this._gb = this.field.get(this._graph);
   return GroupBy.prototype.transform.call(this, input, reset);
 };
 

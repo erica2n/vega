@@ -72,7 +72,7 @@ ved.resize = function(event) {
 
 ved.init = function() {
   // Set base directory
-  vg.config.baseURL = "../";
+  vg.config.load.baseURL = "../";
   
   // Specification drop-down menu               
   var sel = d3.select("#sel_spec");
@@ -120,6 +120,12 @@ ved.init = function() {
       sel.node().selectedIndex = idx;
       ved.select();
     }
+  }
+
+  if (p.renderer) {
+    var ren = document.getElementById("sel_render");
+    ren.selectedIndex = p.renderer === "SVG" || p.renderer === "svg" ? 1 : 0;
+    ved.renderer();
   }
 };
 

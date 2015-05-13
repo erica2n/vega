@@ -1,11 +1,12 @@
-var Node = require('../dataflow/Node'),
+var dl = require('datalib'),
+    Node = require('../dataflow/Node'),
     Encoder  = require('./Encoder'),
     Bounder  = require('./Bounder'),
     Item  = require('./Item'),
     parseData = require('../parse/data'),
     tuple = require('../dataflow/tuple'),
     changeset = require('../dataflow/changeset'),
-    util = require('../util/index'),
+    debug = require('../util/debug'),
     C = require('../util/constants');
 
 function Builder() {    
@@ -14,16 +15,15 @@ function Builder() {
 
 var proto = (Builder.prototype = new Node());
 
-proto.init = function(model, def, mark, parent, parent_id, inheritFrom) {
-  Node.prototype.init.call(this, model.graph)
+proto.init = function(graph, def, mark, parent, parent_id, inheritFrom) {
+  Node.prototype.init.call(this, graph)
     .router(true)
     .collector(true);
 
-  this._model = model;
   this._def   = def;
   this._mark  = mark;
   this._from  = (def.from ? def.from.data : null) || inheritFrom;
-  this._ds    = util.isString(this._from) ? model.data(this._from) : null;
+  this._ds    = dl.isString(this._from) ? graph.data(this._from) : null;
   this._map   = {};
 
   this._revises = false;  // Should scenegraph items track _prev?
@@ -43,8 +43,8 @@ proto.init = function(model, def, mark, parent, parent_id, inheritFrom) {
   // Non-group mark builders are super nodes. Encoder and Bounder remain 
   // separate operators but are embedded and called by Builder.evaluate.
   this._isSuper = (this._def.type !== C.GROUP); 
-  this._encoder = new Encoder(this._model, this._mark);
-  this._bounder = new Bounder(this._model, this._mark);
+  this._encoder = new Encoder(this._graph, this._mark);
+  this._bounder = new Bounder(this._graph, this._mark);
 
   if(this._ds) { this._encoder.dependency(C.DATA, this._from); }
 
@@ -75,7 +75,7 @@ proto.revises = function(p) {
 function inlineDs() {
   var from = this._def.from,
       geom = from.mark,
-      name, spec, sibling, output;
+      src, name, spec, sibling, output;
 
   if(geom) {
     name = ["vg", this._parent_id, geom].join("_");
@@ -85,7 +85,8 @@ function inlineDs() {
       modify: from.modify
     };
   } else {
-    name = ["vg", this._from, this._def.type, Date.now()].join("_");
+    src = this._graph.data(this._from);
+    name = ["vg", this._from, this._def.type, src.listeners(true).length].join("_");
     spec = {
       name: name,
       source: this._from,
@@ -95,7 +96,7 @@ function inlineDs() {
   }
 
   this._from = name;
-  this._ds = parseData.datasource(this._model, spec);
+  this._ds = parseData.datasource(this._graph, spec);
   var revises = this._ds.revises();
 
   if(geom) {
@@ -126,7 +127,7 @@ proto.pipeline = function() {
 proto.connect = function() {
   var builder = this;
 
-  this._model.graph.connect(this.pipeline());
+  this._graph.connect(this.pipeline());
   this._encoder.dependency(C.SCALES).forEach(function(s) {
     builder._parent.scale(s).addListener(builder);
   });
@@ -144,7 +145,7 @@ proto.disconnect = function() {
   if(!this._listeners.length) return this;
 
   Node.prototype.disconnect.call(this);
-  this._model.graph.disconnect(this.pipeline());
+  this._graph.disconnect(this.pipeline());
   this._encoder.dependency(C.SCALES).forEach(function(s) {
     builder._parent.scale(s).removeListener(builder);
   });
@@ -156,7 +157,7 @@ proto.sibling = function(name) {
 };
 
 proto.evaluate = function(input) {
-  util.debug(input, ["building", this._from, this._def.type]);
+  debug(input, ["building", this._from, this._def.type]);
 
   var output, fullUpdate, fcs, data;
 
@@ -166,7 +167,7 @@ proto.evaluate = function(input) {
     // We need to determine if any encoder dependencies have been updated.
     // However, the encoder's data source will likely be updated, and shouldn't
     // trigger all items to mod.
-    data = util.duplicate(output.data);
+    data = dl.duplicate(output.data);
     delete output.data[this._ds.name()];
     fullUpdate = this._encoder.reevaluate(output);
     output.data = data;
@@ -183,7 +184,7 @@ proto.evaluate = function(input) {
     }
   } else {
     fullUpdate = this._encoder.reevaluate(input);
-    data = util.isFunction(this._def.from) ? this._def.from() : [C.SENTINEL];
+    data = dl.isFunction(this._def.from) ? this._def.from() : [C.SENTINEL];
     output = joinValues.call(this, input, data, fullUpdate);
   }
 
@@ -239,7 +240,7 @@ function joinDatasource(input, data, fullUpdate) {
     this._map[key] = null;
   }
 
-  join.call(this, data, keyf, next, output, null, util.tuple_ids(fullUpdate ? data : mod));
+  join.call(this, data, keyf, next, output, null, tuple.idMap(fullUpdate ? data : mod));
 
   return (this._mark.items = next, output);
 }
@@ -257,7 +258,7 @@ function joinValues(input, data, fullUpdate) {
     if (keyf) this._map[item.key] = item;
   }
   
-  join.call(this, data, keyf, next, output, prev, fullUpdate ? util.tuple_ids(data) : null);
+  join.call(this, data, keyf, next, output, prev, fullUpdate ? tuple.idMap(data) : null);
 
   for (i=0, len=prev.length; i<len; ++i) {
     item = prev[i];
@@ -273,7 +274,7 @@ function joinValues(input, data, fullUpdate) {
 
 function keyFunction(key) {
   if (key == null) return null;
-  var f = util.array(key).map(util.accessor);
+  var f = dl.array(key).map(dl.accessor);
   return function(d) {
     for (var s="", i=0, n=f.length; i<n; ++i) {
       if (i>0) s += "|";

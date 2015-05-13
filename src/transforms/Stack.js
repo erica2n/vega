@@ -1,11 +1,10 @@
-var Transform = require('./Transform'),
-    Collector = require('../dataflow/Collector'),
-    util = require('../util/index'),
-    tuple = require('../dataflow/tuple'),
-    changeset = require('../dataflow/changeset');
+var dl = require('datalib'),
+    Transform = require('./Transform'),
+    BatchTransform = require('./BatchTransform'),
+    tuple = require('../dataflow/tuple');
 
 function Stack(graph) {
-  Transform.prototype.init.call(this, graph);
+  BatchTransform.prototype.init.call(this, graph);
   Transform.addParameters(this, {
     groupby: {type: "array<field>"},
     sortby: {type: "array<field>"},
@@ -14,25 +13,19 @@ function Stack(graph) {
   });
 
   this._output = {
-    "start": "y2",
-    "stop": "y",
-    "mid": "cy"
+    "start": "layout:start",
+    "stop":  "layout:stop",
+    "mid":   "layout:mid"
   };
-  this._collector = new Collector(graph);
-
   return this;
 }
 
-var proto = (Stack.prototype = new Transform());
+var proto = (Stack.prototype = new BatchTransform());
 
-proto.transform = function(input) {
-  // Materialize the current datasource. TODO: share collectors
-  this._collector.evaluate(input);
-  var data = this._collector.data();
-
+proto.batchTransform = function(input, data) {
   var g = this._graph,
       groupby = this.groupby.get(g).accessors,
-      sortby = util.comparator(this.sortby.get(g).fields),
+      sortby = dl.comparator(this.sortby.get(g).fields),
       value = this.value.get(g).accessor,
       offset = this.offset.get(g),
       output = this._output;

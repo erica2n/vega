@@ -1,6 +1,5 @@
 var Node = require('../dataflow/Node'),
     Parameter = require('./Parameter'),
-    util = require('../util/index'),
     C = require('../util/constants');
 
 function Transform(graph) {
@@ -13,7 +12,7 @@ Transform.addParameters = function(proto, params) {
   for (var name in params) {
     p = params[name];
     proto[name] = new Parameter(name, p.type);
-    if(p.default) proto[name].set(proto, p.default);
+    if (p.hasOwnProperty('default')) proto[name].set(proto, p.default);
   }
   proto._parameters = params;
 };

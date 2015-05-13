@@ -15,8 +15,7 @@
         {
           "type": "aggregate", 
           "group_by": "x", 
-          "on": "z", 
-          "measures": ["count", "avg", "min", "max", "sum", "var", "stdev", "varp", "stdevp", "median"]
+          "fields": [{"name": "z", "ops": ["count", "avg", "min", "max", "sum", "var", "stdev", "varp", "stdevp", "median"]}]
         }
       ]
     }
@@ -54,7 +53,7 @@
     "properties": {
       "update": {
         "x": {"scale": "x", "field": "x"},
-        "y": {"scale": "y", "field": "avg"},
+        "y": {"scale": "y", "field": "z_avg"},
         "size": {"value": 100},
         "fill": {"value": "steelblue"}
       }

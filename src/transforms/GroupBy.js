@@ -1,7 +1,6 @@
 var Transform = require('./Transform'),
     tuple = require('../dataflow/tuple'),
     changeset = require('../dataflow/changeset'),
-    util = require('../util/index'),
     C = require('../util/constants');
 
 function GroupBy(graph) {
@@ -12,7 +11,7 @@ function GroupBy(graph) {
 var proto = (GroupBy.prototype = new Transform());
 
 proto.init = function(graph) {
-  this._refs  = []; // accessors to groupby fields
+  this._gb = null; // fields+accessors to groupby fields
   this._cells = {};
   return Transform.prototype.init.call(this, graph)
     .router(true).revises(true);
@@ -30,7 +29,8 @@ proto._reset = function(input, output) {
 };
 
 proto._keys = function(x) {
-  var keys = this._refs.reduce(function(g, f) {
+  var acc = this._gb.accessors || [this._gb.accessor];
+  var keys = acc.reduce(function(g, f) {
     return ((v = f(x)) !== undefined) ? (g.push(v), g) : g;
   }, []), k = keys.join("|"), v;
   return keys.length > 0 ? {keys: keys, key: k} : undefined;
@@ -50,7 +50,16 @@ proto._new_cell = function(x, k) {
 };
 
 proto._new_tuple = function(x, k) {
-  return tuple.derive(null, null);
+  var gb = this._gb,
+      fields = gb.fields || [gb.field],
+      acc = gb.accessors || [gb.accessor],
+      t = {}, i, len;
+
+  for(i=0, len=fields.length; i<len; ++i) {
+    t[fields[i]] = acc[i](x);
+  } 
+
+  return tuple.ingest(t, null);
 };
 
 proto._add = function(x) {
