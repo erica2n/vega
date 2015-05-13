@@ -1,4 +1,5 @@
 var util = require('../util/index');
+var vec2d = require('./vector2d');
 
 module.exports = function(codegen) {
 
@@ -12,7 +13,7 @@ module.exports = function(codegen) {
       ? "()"
       : "(" + args.slice(1).map(codegen).join(",") + ")");
   }
-  
+
   var DATE = "new Date";
   var STRING = "String";
   var REGEXP = "RegExp";
@@ -129,7 +130,7 @@ module.exports = function(codegen) {
     "test": function(args) {
         return fncall("test", args, REGEXP);
       },
-    
+
     // Control Flow functions
     "if": function(args) {
         if (args.length < 3)
@@ -138,6 +139,13 @@ module.exports = function(codegen) {
         throw new Error("Too many arguments to if function.");
         var a = args.map(codegen);
         return a[0]+"?"+a[1]+":"+a[2];
-      }
+      },
+
+    // Vector 2d functions
+    vec2d: vec2.vec2d,
+    dot: vec2d.dot,
+    times: vec2d.times,
+    normalized: vec2d.normalized,
+    veclen: vec2d.veclen
   };
 };
