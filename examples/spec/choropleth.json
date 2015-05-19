@@ -21,7 +21,7 @@
           "as": "unemp",
           "default": null
         },
-        {"type": "filter", "test": "d['geo:path']!=null && d.unemp!=null"}
+        {"type": "filter", "test": "datum['geo:path']!=null && datum.unemp!=null"}
       ]
     }
   ],

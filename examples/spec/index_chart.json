@@ -26,7 +26,7 @@
       "source": "stocks",
       "transform": [{
         "type": "filter",
-        "test": "d.date + 1296000000 >= indexDate && d.date - 1296000000 <= indexDate"
+        "test": "datum.date + 1296000000 >= indexDate && datum.date - 1296000000 <= indexDate"
       }]
     },
     {
@@ -42,7 +42,7 @@
       }, {
         "type": "formula",
         "field": "indexed_price",
-        "expr": "d.index_term.price > 0 ? (d.price - d.index_term.price)/d.index_term.price : 0"
+        "expr": "datum.index_term.price > 0 ? (datum.price - datum.index_term.price)/datum.index_term.price : 0"
       }]
     }
   ],
@@ -94,7 +94,7 @@
         {
           "type": "text",
           "from": {
-            "transform": [{"type": "filter", "test": "d.date == 1267430400000"}]
+            "transform": [{"type": "filter", "test": "datum.date == 1267430400000"}]
           },
           "properties": {
             "update": {
