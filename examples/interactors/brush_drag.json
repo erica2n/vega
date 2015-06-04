@@ -1,0 +1,85 @@
+{
+  "signals": [
+      {
+        "name": "dragging",
+        "streams": [
+          {"type": ".brush_rect:mousedown", "expr": "p.x"},
+          {"type": "mouseup", "expr": "0"}
+       ]
+      },
+      {
+        "name": "start_offset",
+        "init": {"x": 0, "y": 0},
+        "streams":[
+          {"type": ".brush_rect:mousedown", "expr": "{'x': brush_start.x - p.x, 'y': brush_start.y - p.y}"}
+        ]
+      },
+      {
+        "name": "end_offset",
+        "streams":[
+          {"type": ".brush_rect:mousedown", "expr": "{'x': brush_end.x - p.x, 'y': brush_end.y - p.y}"}
+        ]
+      },
+     {
+       "name": "brush_start",
+       "init": {"x": 0, "y": 0},
+       "streams": [
+        {"type": "mousedown[!dragging]", "expr": "p"},
+        {"type": "mousemove[dragging]", "expr": "{'x': start_offset.x + p.x, 'y': start_offset.y + p.y}"}
+      ]
+     },
+     {
+       "name": "brush_end",
+       "init": {"x": 0, "y": 0},
+       "streams": [
+         {"type": "mousedown[!dragging], [mousedown[!dragging], mouseup[!dragging]] > mousemove", "expr": "p"},
+         {"type": "mousemove[dragging]", "expr": "{'x': end_offset.x + p.x, 'y': end_offset.y + p.y}"}
+       ]
+     }
+   ],
+
+   "predicates": [
+     {
+       "name": "xRange",
+       "type": "in",
+       "item": {"arg": "x"},
+       "range": [{"signal": "brush_start.x"}, {"signal": "brush_end.x"}],
+       "scale": {"name": {"arg": "xScale"}, "invert": true}
+     },
+     {
+       "name": "yRange",
+       "type": "in",
+       "item": {"arg": "y"},
+       "range": [{"signal": "brush_start.y"}, {"signal": "brush_end.y"}],
+       "scale": {"name": {"arg": "yScale"}, "invert": true}
+     },
+     {
+       "name": "inRange",
+       "type": "&&",
+       "operands": [
+         {"predicate": "xRange"},
+         {"predicate": "yRange"}
+       ]
+     }
+   ],
+
+   "marks": [
+    {
+      "name": "brush_rect",
+      "type": "rect",
+      "properties": {
+        "enter": {
+          "class": {"value": "brush_rect"},
+          "fill": {"value": "grey"},
+          "fillOpacity": {"value": 0.2}
+        },
+        "update": {
+          "x": {"signal": "brush_start.x"},
+          "x2": {"signal": "brush_end.x"},
+          "y": {"signal": "brush_start.y"},
+          "y2": {"signal": "brush_end.y"}
+        }
+      }
+    }
+  ]
+}
