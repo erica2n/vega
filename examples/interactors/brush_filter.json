@@ -1,0 +1,76 @@
+{
+  "signals": [
+      {
+        "name": "dragging",
+        "streams": [
+          {"type": ".brush_rect:mousedown", "expr": "p.x"},
+          {"type": "mouseup", "expr": "0"}
+       ]
+      },
+      {
+        "name": "start_offset",
+        "streams":[
+          {"type": ".brush_rect:mousedown", "expr": "brush_start - p.x"}
+        ]
+      },
+      {
+        "name": "end_offset",
+        "streams":[
+          {"type": ".brush_rect:mousedown", "expr": "brush_end - p.x"}
+        ]
+      },
+     {
+       "name": "brush_start",
+       "init": 0,
+       "streams": [
+        {"type": "mousedown[!dragging]", "expr": "p.x"},
+        {"type": "mousemove[dragging]", "expr": "start_offset + p.x"}
+      ]
+     },
+     {
+       "name": "brush_end",
+       "init": 0,
+       "streams": [
+         {"type": "mousedown[!dragging], [mousedown[!dragging], mouseup[!dragging]] > mousemove", "expr": "p.x"},
+         {"type": "mousemove[dragging]", "expr": "end_offset + p.x"}
+       ]
+     }
+   ],
+
+   "predicates": [
+     {
+       "name": "xRange",
+       "type": "in",
+       "item": {"arg": "x"},
+       "range": [{"signal": "brush_start"}, {"signal": "brush_end"}],
+       "scale": {"name": {"arg": "xScale"}, "invert": true}
+     },
+     {
+       "name": "inRange",
+       "type": "&&",
+       "operands": [
+         {"predicate": "xRange"}
+       ]
+     }
+   ],
+
+   "marks": [
+    {
+      "name": "brush_rect",
+      "type": "rect",
+      "properties": {
+        "enter": {
+          "class": {"value": "brush_rect"},
+          "fill": {"value": "grey"},
+          "fillOpacity": {"value": 0.2}
+        },
+        "update": {
+          "x": {"signal": "brush_start"},
+          "x2": {"signal": "brush_end"},
+          "y": {"value": 0},
+          "y2": {"value": 10}
+        }
+      }
+    }
+  ]
+}
